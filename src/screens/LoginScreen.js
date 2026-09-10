@@ -23,7 +23,7 @@ const LoginScreen = ({ navigation }) => {
 
       if (response.data && response.data.token) {
         await AsyncStorage.setItem('userToken', response.data.token);
-        navigation.replace('Menu');
+        navigation.replace('Dashboard');
       } else {
         Alert.alert('Error', 'No se recibió el token de acceso');
       }

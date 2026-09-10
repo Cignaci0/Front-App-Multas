@@ -7,6 +7,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import LoginScreen from './src/screens/LoginScreen';
 import MenuScreen from './src/screens/MenuScreen';
 import FormularioMultaScreen from './src/screens/FormularioMultaScreen';
+import DashboardScreen from './src/screens/DashboardScreen';
 
 const Stack = createStackNavigator();
 
@@ -18,6 +19,11 @@ export default function App() {
           name="Login" 
           component={LoginScreen} 
           options={{ headerShown: false }} 
+        />
+        <Stack.Screen 
+          name="Dashboard" 
+          component={DashboardScreen} 
+          options={{ title: 'Inicio', headerLeft: () => null }} 
         />
         <Stack.Screen 
           name="Menu" 

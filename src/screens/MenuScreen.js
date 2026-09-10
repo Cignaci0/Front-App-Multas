@@ -1,93 +1,80 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, FlatList, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, ActivityIndicator, Alert } from 'react-native';
 import api from '../api/axios';
 
 const MenuScreen = ({ navigation }) => {
-  const [menuData, setMenuData] = useState([]);
+  const [queryText, setQueryText] = useState('');
+  const [tiposMulta, setTiposMulta] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [expandedId, setExpandedId] = useState(null);
 
   useEffect(() => {
-    fetchMenu();
-  }, []);
+    fetchTiposMulta(queryText);
+  }, [queryText]);
 
-  const fetchMenu = async () => {
+  const fetchTiposMulta = async (query) => {
+    setLoading(true);
     try {
-      const response = await api.get('/tipoMulta/menu');
-      setMenuData(response.data);
+      const response = await api.get('/tipoMulta', {
+        params: {
+          query: query,
+          pagina: '',
+          tamanio: '',
+        },
+      });
+      setTiposMulta(response.data || []);
     } catch (error) {
-      Alert.alert('Error', 'No se pudo cargar el menú');
+      Alert.alert('Error', 'No se pudo cargar los tipos de multa');
       console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
-  const toggleExpand = (padre) => {
-    if (expandedId === padre) {
-      setExpandedId(null);
-    } else {
-      setExpandedId(padre);
-    }
+  const handleSelectMulta = (item) => {
+    setQueryText('');
+    navigation.navigate('FormularioMulta', { tipo_multa: item.id });
   };
 
-  const handleSelectHijo = (hijo) => {
-    navigation.navigate('FormularioMulta', { tipo_multa: hijo.id });
-  };
-
-  const renderItem = ({ item }) => {
-    const isExpanded = expandedId === item.padre;
-
-    return (
-      <View style={styles.menuItem}>
-        <TouchableOpacity 
-          style={styles.padreButton} 
-          onPress={() => toggleExpand(item.padre)}
-        >
-          <Text style={styles.padreText}>{item.padre}</Text>
-          <Text style={styles.icon}>{isExpanded ? '▼' : '▶'}</Text>
-        </TouchableOpacity>
-
-        {isExpanded && item.hijos && item.hijos.length > 0 && (
-          <View style={styles.hijosContainer}>
-            {item.hijos.map((hijo) => (
-              <TouchableOpacity
-                key={hijo.id}
-                style={styles.hijoButton}
-                onPress={() => handleSelectHijo(hijo)}
-              >
-                <Text style={styles.hijoText}>{hijo.nombre}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
-        
-        {isExpanded && (!item.hijos || item.hijos.length === 0) && (
-          <View style={styles.hijosContainer}>
-            <Text style={styles.emptyText}>No hay opciones disponibles</Text>
-          </View>
-        )}
-      </View>
-    );
-  };
-
-  if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#0066CC" />
-      </View>
-    );
-  }
+  const renderItem = ({ item }) => (
+    <TouchableOpacity 
+      style={styles.itemCard}
+      onPress={() => handleSelectMulta(item)}
+    >
+      <Text style={styles.itemText}>{item.nombre}</Text>
+    </TouchableOpacity>
+  );
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Selecciona el tipo de multa</Text>
-      <FlatList
-        data={menuData}
-        keyExtractor={(item, index) => item.padre || index.toString()}
-        renderItem={renderItem}
-        contentContainerStyle={styles.listContent}
-      />
+
+      {/* Recuadro con bordes redondeados en la parte superior */}
+      <View style={styles.searchContainer}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="digite palabra clave o código de multa"
+          placeholderTextColor="#999"
+          value={queryText}
+          onChangeText={setQueryText}
+          autoCapitalize="none"
+        />
+      </View>
+
+      {loading ? (
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color="#0066CC" />
+        </View>
+      ) : (
+        <FlatList
+          data={tiposMulta}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderItem}
+          contentContainerStyle={styles.listContent}
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>No se encontraron tipos de multa</Text>
+          }
+        />
+      )}
     </View>
   );
 };
@@ -96,6 +83,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F5F5',
+    paddingTop: 10,
   },
   center: {
     flex: 1,
@@ -106,56 +94,55 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginVertical: 20,
+    marginVertical: 15,
     color: '#333',
+  },
+  searchContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 15,
+  },
+  searchInput: {
+    backgroundColor: '#fff',
+    borderRadius: 25, // Bordes redondeados
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    color: '#333',
+    elevation: 2, // Sombra para Android
+    shadowColor: '#000', // Sombra para iOS
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   listContent: {
     paddingHorizontal: 20,
     paddingBottom: 20,
   },
-  menuItem: {
-    marginBottom: 10,
+  itemCard: {
     backgroundColor: '#fff',
-    borderRadius: 8,
-    overflow: 'hidden',
-    elevation: 2, // shadow for android
-    shadowColor: '#000', // shadow for ios
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    elevation: 2,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.41,
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
-  padreButton: {
-    padding: 18,
-    backgroundColor: '#0066CC',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  padreText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  icon: {
-    color: '#fff',
-    fontSize: 16,
-  },
-  hijosContainer: {
-    backgroundColor: '#fff',
-  },
-  hijoButton: {
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  hijoText: {
-    fontSize: 16,
-    color: '#444',
+  itemText: {
+    fontSize: 15,
+    color: '#333',
+    lineHeight: 22,
   },
   emptyText: {
-    padding: 15,
-    fontSize: 14,
-    color: '#999',
+    textAlign: 'center',
+    fontSize: 15,
+    color: '#888',
+    marginTop: 30,
     fontStyle: 'italic',
   },
 });
